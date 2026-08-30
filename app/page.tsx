@@ -31,12 +31,6 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet';
 
-type WaterAudio = {
-  context: AudioContext;
-  source: AudioBufferSourceNode;
-  gain: GainNode;
-};
-
 type AssistantMode = '互動導覽' | '華語' | 'English';
 
 type ChatMessage = {
@@ -192,7 +186,8 @@ export default function Home() {
   ]);
   const [water, setWater] = useState({ farming: 45, homes: 30, ecology: 25 });
   const [commitment, setCommitment] = useState('');
-  const audioRef = useRef<WaterAudio | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fadeTimerRef = useRef<number | null>(null);
   const waterTotal = water.farming + water.homes + water.ecology;
   const progress = Math.round((visited.length / zones.length) * 100);
 
@@ -206,52 +201,44 @@ export default function Home() {
 
   useEffect(() => {
     return () => {
-      audioRef.current?.source.stop();
-      audioRef.current?.context.close();
+      if (fadeTimerRef.current !== null) window.clearInterval(fadeTimerRef.current);
+      audioRef.current?.pause();
     };
   }, []);
 
-  function toggleWaterSound() {
-    if (soundOn && audioRef.current) {
-      audioRef.current.gain.gain.exponentialRampToValueAtTime(
-        0.0001,
-        audioRef.current.context.currentTime + 0.35,
-      );
-      window.setTimeout(() => {
-        audioRef.current?.source.stop();
-        audioRef.current?.context.close();
-        audioRef.current = null;
-      }, 420);
+  async function toggleWaterSound() {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (fadeTimerRef.current !== null) window.clearInterval(fadeTimerRef.current);
+
+    if (soundOn) {
       setSoundOn(false);
+      fadeTimerRef.current = window.setInterval(() => {
+        audio.volume = Math.max(0, audio.volume - 0.06);
+        if (audio.volume <= 0.01) {
+          audio.pause();
+          audio.volume = 0;
+          if (fadeTimerRef.current !== null) window.clearInterval(fadeTimerRef.current);
+          fadeTimerRef.current = null;
+        }
+      }, 40);
       return;
     }
 
-    const context = new AudioContext();
-    const seconds = 4;
-    const buffer = context.createBuffer(2, context.sampleRate * seconds, context.sampleRate);
-    for (let channel = 0; channel < 2; channel += 1) {
-      const data = buffer.getChannelData(channel);
-      let last = 0;
-      for (let index = 0; index < data.length; index += 1) {
-        const white = Math.random() * 2 - 1;
-        last = last * 0.985 + white * 0.015;
-        data[index] = last * 0.42 + Math.sin(index / (142 + channel * 17)) * 0.008;
-      }
+    audio.volume = 0;
+    try {
+      await audio.play();
+      setSoundOn(true);
+      fadeTimerRef.current = window.setInterval(() => {
+        audio.volume = Math.min(0.38, audio.volume + 0.035);
+        if (audio.volume >= 0.38) {
+          if (fadeTimerRef.current !== null) window.clearInterval(fadeTimerRef.current);
+          fadeTimerRef.current = null;
+        }
+      }, 45);
+    } catch {
+      setSoundOn(false);
     }
-    const source = context.createBufferSource();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    source.buffer = buffer;
-    source.loop = true;
-    filter.type = 'bandpass';
-    filter.frequency.value = 820;
-    filter.Q.value = 0.45;
-    gain.gain.value = 0.0001;
-    source.connect(filter).connect(gain).connect(context.destination);
-    source.start();
-    gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.8);
-    audioRef.current = { context, source, gain };
-    setSoundOn(true);
   }
 
   function beginJourney(selectedPath?: 'north' | 'south') {
@@ -287,6 +274,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
+      <audio
+        ref={audioRef}
+        src="/audio/trix_records198-water-flowing-sound-327661.mp3"
+        loop
+        preload="none"
+        aria-hidden="true"
+      />
       <section className="relative isolate min-h-screen overflow-hidden">
         <img
           src="/water-key-visual.png"
