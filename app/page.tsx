@@ -1,12 +1,13 @@
 'use client';
 
 import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowDown, ArrowRight, Bot, Check, Droplet, Droplets, ExternalLink, Flag, MapPinned, Send, ShieldCheck, Sparkles, Sprout, Star, Volume2, VolumeX, Waves } from 'lucide-react';
+import { ArrowDown, Bot, Check, Download, Droplet, Droplets, ExternalLink, Flag, MapPinned, Play, Send, ShieldCheck, Sparkles, Sprout, Star, Volume2, VolumeX, Waves } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ZoneGameDialog } from '@/components/zone-game-dialog';
 
 type AssistantMode = '互動導覽' | '華語' | 'English';
 type ChatMessage = { role: 'assistant' | 'user'; text: string };
@@ -48,6 +49,7 @@ export default function Home() {
   const [messages, setMessages] = useState<ChatMessage[]>([{ role: 'assistant', text: '𠊎係水水客庄小幫手！想從哪條水路開始？也可以直接問水權、伯公或南北客庄的差異。' }]);
   const [water, setWater] = useState({ farming: 45, homes: 30, ecology: 25 });
   const [commitment, setCommitment] = useState('');
+  const [activeZone, setActiveZone] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
   const waterTotal = water.farming + water.homes + water.ecology;
@@ -75,7 +77,55 @@ export default function Home() {
   }
 
   function beginJourney(selectedPath?: 'north' | 'south') { if (selectedPath) setPath(selectedPath); document.querySelector('#exhibition')?.scrollIntoView({ behavior: 'smooth' }); }
-  function collectClue(zoneId: string) { setVisited((current) => current.includes(zoneId) ? current.filter((item) => item !== zoneId) : [...current, zoneId]); }
+  function completeZone(zoneIndex: number) {
+    const zoneId = zones[zoneIndex].id;
+    setVisited((current) => current.includes(zoneId) ? current : [...current, zoneId]);
+  }
+
+  function downloadWaterCard() {
+    if (!commitment) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 630;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+
+    context.fillStyle = '#143f4f';
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = '#75d4ed';
+    context.beginPath();
+    context.arc(1040, 40, 230, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#ffcb47';
+    context.beginPath();
+    context.arc(1050, 210, 72, 0, Math.PI * 2);
+    context.fill();
+    context.fillStyle = '#bddd43';
+    context.fillRect(70, 70, 270, 58);
+    context.fillStyle = '#143f4f';
+    context.font = '900 28px "Microsoft JhengHei", sans-serif';
+    context.fillText('我與客庄共水', 95, 109);
+    context.fillStyle = '#fff9e9';
+    context.font = '900 58px "Microsoft JhengHei", sans-serif';
+    const pledge = `我願意${commitment}`;
+    const firstLine = pledge.length > 19 ? pledge.slice(0, 19) : pledge;
+    const secondLine = pledge.length > 19 ? pledge.slice(19) : '';
+    context.fillText(firstLine, 72, 245);
+    if (secondLine) context.fillText(secondLine, 72, 325);
+    context.font = '700 26px "Microsoft JhengHei", sans-serif';
+    context.fillStyle = '#9de3f3';
+    context.fillText(`完成 ${visited.length} / 6 道水路任務`, 74, 430);
+    context.fillStyle = '#fff9e9';
+    context.font = '700 22px "Microsoft JhengHei", sans-serif';
+    context.fillText('辨水 · 造水 · 分水 · 守水 · 共水', 74, 506);
+    context.font = '900 28px "Microsoft JhengHei", sans-serif';
+    context.fillText('水水客庄', 74, 558);
+
+    const link = document.createElement('a');
+    link.download = '我與客庄共水.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
   function submitQuestion(event: FormEvent) { event.preventDefault(); const clean = question.trim(); if (!clean) return; setMessages((current) => [...current, { role: 'user', text: clean }, { role: 'assistant', text: assistantReply(clean, assistantMode) }]); setQuestion(''); }
   function askQuick(text: string) { setMessages((current) => [...current, { role: 'user', text }, { role: 'assistant', text: assistantReply(text, assistantMode) }]); }
 
@@ -119,7 +169,7 @@ export default function Home() {
             {zones.map((zone, index) => { const collected = visited.includes(zone.id); return (
               <article id={zone.id} key={zone.id} className={`mission-card scroll-mt-28 overflow-hidden rounded-[30px] border-[3px] border-[#143f4f] bg-white ${index % 3 === 1 ? 'xl:translate-y-6' : ''}`}>
                 <div className="relative m-3 overflow-hidden rounded-[20px] border-2 border-[#143f4f]"><img src={zone.image} alt={zone.alt} className="aspect-[4/3] w-full object-cover transition duration-500 hover:scale-105" /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#092d3e]/90 to-transparent px-4 pb-4 pt-12 text-[10px] leading-4 text-white/75">{zone.credit}</div><span style={{ backgroundColor: zone.color, color: zone.ink }} className="absolute left-3 top-3 grid size-14 -rotate-6 place-items-center rounded-full border-2 border-[#143f4f] text-xl font-black sticker-mini">{zone.index}</span></div>
-                <div className="flex min-h-[360px] flex-col p-5 pt-3 sm:p-6 sm:pt-3"><div className="flex flex-wrap gap-2"><Badge style={{ backgroundColor: zone.color, color: zone.ink }} className="h-auto border-2 border-[#143f4f] px-3 py-1 font-black">{zone.verb}</Badge><Badge variant="outline" className="h-auto border-2 border-[#143f4f]/25 px-3 py-1 font-bold text-[#38727a]">PLAY!</Badge></div><h3 className="mt-5 text-3xl font-black leading-tight tracking-[-.02em]">{zone.title}</h3><p className="mt-3 font-black text-[#e65e4b]">{zone.subtitle}</p><p className="mt-4 text-sm font-medium leading-7 text-[#58707a]">{zone.description}</p><div className="mt-auto pt-6"><div className="flex items-center justify-between border-t-2 border-dashed border-[#143f4f]/20 pt-5"><div><p className="text-[10px] font-black tracking-[.14em] text-[#7a9097]">互動挑戰</p><p className="mt-1 font-black">{zone.interaction}</p></div><Button onClick={() => collectClue(zone.id)} variant="outline" size="icon" className={`size-12 rounded-full border-2 border-[#143f4f] ${collected ? 'bg-[#bddd43]' : 'bg-[#75d4ed]'} hover:bg-[#ffcb47]`} aria-label={collected ? `取消線索 ${zone.clue}` : `收下線索 ${zone.clue}`}>{collected ? <Check /> : <Droplets />}</Button></div><div className="mt-4 flex items-center justify-between gap-3"><button onClick={() => collectClue(zone.id)} className="flex items-center gap-1 text-sm font-black text-[#137f79] hover:underline">{collected ? `已解鎖：${zone.clue}` : '解鎖水紋線索'} <ArrowRight className="size-4" /></button><a href={zone.source} target="_blank" rel="noreferrer" className="text-[#748a92] hover:text-[#143f4f]" aria-label="查看典藏來源"><ExternalLink className="size-4" /></a></div></div></div>
+                <div className="flex min-h-[360px] flex-col p-5 pt-3 sm:p-6 sm:pt-3"><div className="flex flex-wrap gap-2"><Badge style={{ backgroundColor: zone.color, color: zone.ink }} className="h-auto border-2 border-[#143f4f] px-3 py-1 font-black">{zone.verb}</Badge><Badge variant="outline" className="h-auto border-2 border-[#143f4f]/25 px-3 py-1 font-bold text-[#38727a]">可操作互動</Badge></div><h3 className="mt-5 text-3xl font-black leading-tight tracking-[-.02em]">{zone.title}</h3><p className="mt-3 font-black text-[#e65e4b]">{zone.subtitle}</p><p className="mt-4 text-sm font-medium leading-7 text-[#58707a]">{zone.description}</p><div className="mt-auto pt-6"><div className="border-t-2 border-dashed border-[#143f4f]/20 pt-5"><p className="text-[10px] font-black tracking-[.14em] text-[#7a9097]">年輕化線上互動</p><p className="mt-1 text-lg font-black">{zone.interaction}</p><Button onClick={() => setActiveZone(index)} className={`mt-4 h-12 w-full rounded-full border-2 border-[#143f4f] font-black text-[#143f4f] ${collected ? 'bg-[#bddd43]' : 'bg-[#75d4ed]'} hover:bg-[#ffcb47]`}>{collected ? <Check /> : <Play className="fill-current" />}{collected ? `已完成：${zone.clue}` : '開始互動挑戰'}</Button><div className="mt-4 flex justify-end"><a href={zone.source} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-[#748a92] hover:text-[#143f4f]" aria-label="查看典藏來源">典藏來源 <ExternalLink className="size-4" /></a></div></div></div></div>
               </article>
             ); })}
           </div>
@@ -136,8 +186,11 @@ export default function Home() {
 
       <section className="soft-grid px-5 py-20 sm:px-8 lg:px-12 lg:py-28"><div className="mx-auto grid max-w-[1480px] gap-12 lg:grid-cols-2 lg:items-center"><div><Badge className="sticker-mini h-auto border-2 border-[#143f4f] bg-[#ff8069] px-4 py-2 font-black text-white"><Star className="fill-current" /> FINAL QUEST · 最後任務</Badge><h2 className="mt-5 text-5xl font-black leading-[1.05] tracking-[-.04em] sm:text-7xl">把一條水路，<br /><span className="text-[#148781]">帶回生活。</span></h2><p className="mt-6 max-w-2xl font-medium leading-8 text-[#58707a]">六區的故事最後匯成同一個選擇：理解水勢、節制取用、彼此協作，也把客庄的共生智慧交給下一代。</p><div className="mt-8 space-y-3">{commitments.map((item,index) => <button key={item} onClick={() => setCommitment(item)} className={`commit-card flex w-full items-start gap-4 rounded-2xl border-2 border-[#143f4f] p-4 text-left font-bold ${commitment === item ? 'bg-[#bddd43]' : 'bg-white hover:bg-[#fff0bd]'}`}><span className={`grid size-9 shrink-0 place-items-center rounded-full border-2 border-[#143f4f] ${commitment === item ? 'bg-white' : ['bg-[#75d4ed]','bg-[#ffcb47]','bg-[#ff8069] text-white'][index]}`}>{commitment === item ? <Check className="size-4" /> : index + 1}</span><span className="pt-1.5 leading-6">我願意{item}</span></button>)}</div></div><div className="relative rotate-1 overflow-hidden rounded-[36px] border-[3px] border-[#143f4f] bg-[#143f4f] p-8 text-white sticker-shadow sm:p-12"><div className="absolute -right-16 -top-16 size-64 rounded-full bg-[#75d4ed]" /><div className="absolute right-10 top-12 size-20 rounded-full bg-[#ffcb47]" /><p className="relative text-xs font-black tracking-[.2em] text-[#9de3f3]">MY WATER PLEDGE · 我的共水宣言</p><div className="relative mt-28 sm:mt-36"><p className="text-3xl font-black leading-relaxed sm:text-4xl">{commitment ? `我願意${commitment}` : '選一項承諾，讓你的水紋在這裡匯流。'}</p><div className="mt-9 flex items-center justify-between border-t border-white/25 pt-6"><span className="font-black tracking-[.16em]">水水客庄</span><span className="text-[10px] font-bold text-white/55 sm:text-xs">辨水 · 造水 · 分水 · 守水 · 共水</span></div></div></div></div></section>
 
-      <footer className="bg-[#0b3646] px-5 py-12 text-white sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col gap-8 border-b border-white/15 pb-10 md:flex-row md:items-end md:justify-between"><div><p className="text-3xl font-black tracking-[.1em]">水水客庄</p><p className="mt-3 max-w-xl text-sm font-medium leading-7 text-white/60">從一滴水看見客庄，從客庄智慧認同自己；與自然共生，與地方共榮。</p></div><div className="flex flex-wrap gap-5 text-sm font-bold text-white/70"><a href="#exhibition" className="hover:text-[#bddd43]">六大任務</a><a href="#play" className="hover:text-[#bddd43]">分水實驗室</a><button onClick={() => setAssistantOpen(true)} className="hover:text-[#bddd43]">AI 小幫手</button></div></div><div className="mx-auto flex max-w-[1480px] flex-col gap-2 pt-6 text-xs text-white/40 sm:flex-row sm:justify-between"><p>策展原型內容依《水水客庄線上展示計畫服務建議書 v0.3》製作</p><p>展示圖像來源：客家文化發展中心客家文化資產數位網</p></div></footer>
+      <section className="border-y-[3px] border-[#143f4f] bg-[#ffcb47] px-5 py-10 sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col gap-6 rounded-[28px] border-[3px] border-[#143f4f] bg-white p-6 shadow-[0_6px_0_#143f4f] md:flex-row md:items-center md:justify-between sm:p-8"><div><p className="text-xs font-black tracking-[.18em] text-[#148781]">ANONYMOUS RESULT CARD · 匿名成果卡</p><h2 className="mt-2 text-2xl font-black sm:text-3xl">帶走你的「我與客庄共水」數位卡</h2><p className="mt-2 text-sm font-medium text-[#657b82]">依完成的展區與所選承諾產生，不需登入、不蒐集姓名，也不會自動發布到社群。</p></div><Button onClick={downloadWaterCard} disabled={!commitment} className="h-13 shrink-0 rounded-full border-2 border-[#143f4f] bg-[#bddd43] px-6 font-black text-[#143f4f] hover:bg-[#d3e879] disabled:opacity-45"><Download />{commitment ? '下載我的共水卡' : '請先選一項承諾'}</Button></div></section>
 
+      <footer className="bg-[#0b3646] px-5 py-12 text-white sm:px-8 lg:px-12"><div className="mx-auto flex max-w-[1480px] flex-col gap-8 border-b border-white/15 pb-10 md:flex-row md:items-end md:justify-between"><div><p className="text-3xl font-black tracking-[.1em]">水水客庄</p><p className="mt-3 max-w-xl text-sm font-medium leading-7 text-white/60">從一滴水看見客庄，從客庄智慧認同自己；與自然共生，與地方共榮。</p></div><div className="flex flex-wrap gap-5 text-sm font-bold text-white/70"><a href="#exhibition" className="hover:text-[#bddd43]">六大任務</a><a href="#play" className="hover:text-[#bddd43]">分水實驗室</a><button onClick={() => setAssistantOpen(true)} className="hover:text-[#bddd43]">AI 小幫手</button></div></div><div className="mx-auto flex max-w-[1480px] flex-col gap-2 pt-6 text-xs text-white/40 sm:flex-row sm:justify-between"><p>策展原型內容依《水水客庄線上展示計畫服務建議書修訂版 v0.6》製作</p><p>展示圖像來源：客家文化發展中心客家文化資產數位網</p></div></footer>
+
+      <ZoneGameDialog zoneIndex={activeZone} open={activeZone !== null} onOpenChange={(open) => { if (!open) setActiveZone(null); }} onComplete={completeZone} />
       <Button onClick={() => setAssistantOpen(true)} className="ai-fab sticker-shadow fixed bottom-5 right-5 z-40 h-16 rounded-full border-[3px] border-[#143f4f] bg-[#ff8069] px-5 font-black text-white hover:bg-[#ef674f] sm:bottom-7 sm:right-7"><span className="grid size-9 place-items-center rounded-full bg-white text-[#143f4f]"><Bot className="size-5" /></span><span>AI 水水小幫手</span><span className="absolute -right-1 -top-1 size-4 rounded-full border-2 border-[#143f4f] bg-[#bddd43]" aria-hidden="true" /></Button>
       <Sheet open={assistantOpen} onOpenChange={setAssistantOpen}><SheetContent className="w-[min(100vw,440px)] gap-0 border-l-[3px] border-[#143f4f] bg-[#fff9e9] sm:max-w-[440px]"><SheetHeader className="border-b-[3px] border-[#143f4f] bg-[#75d4ed] p-6 pr-14 text-[#143f4f]"><div className="mb-3 flex items-center gap-3"><span className="grid size-12 place-items-center rounded-full border-2 border-[#143f4f] bg-[#ffcb47] sticker-mini"><Bot /></span><span className="rounded-full border-2 border-[#143f4f] bg-[#bddd43] px-3 py-1 text-[10px] font-black"><span className="mr-1 inline-block size-2 rounded-full bg-[#13817c]" />展覽知識庫已連線</span></div><SheetTitle className="text-2xl font-black text-[#143f4f]">AI 水水客庄小幫手</SheetTitle><SheetDescription className="mt-1 font-medium text-[#326170]">用互動導覽、華語或英語，問一條水路的故事。</SheetDescription></SheetHeader><div className="border-b-2 border-[#143f4f]/15 p-4"><div className="grid grid-cols-3 gap-2" aria-label="回答模式">{(['互動導覽','華語','English'] as AssistantMode[]).map((mode) => <button key={mode} onClick={() => setAssistantMode(mode)} className={`rounded-full border-2 border-[#143f4f] px-3 py-2 text-xs font-black ${assistantMode === mode ? 'bg-[#bddd43]' : 'bg-white hover:bg-[#dff4f8]'}`}>{mode}</button>)}</div></div><div className="flex-1 space-y-4 overflow-y-auto p-5" aria-live="polite">{messages.map((message,index) => <div key={`${message.role}-${index}`} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[88%] rounded-2xl border-2 border-[#143f4f] px-4 py-3 text-sm font-medium leading-6 sticker-mini ${message.role === 'user' ? 'rounded-br-sm bg-[#143f4f] text-white' : 'rounded-bl-sm bg-white text-[#335765]'}`}>{message.text}</div></div>)}<div className="pt-1"><p className="mb-2 text-[11px] font-black tracking-[.12em] text-[#72868d]">你也可以問</p><div className="flex flex-wrap gap-2">{(assistantMode === 'English' ? ['How were water rights shared?','Why does Bogong guard water?'] : ['水權怎麼分？','伯公為何守水口？','南北客庄哪裡不同？']).map((prompt) => <button key={prompt} onClick={() => askQuick(prompt)} className="rounded-full border-2 border-[#143f4f]/30 bg-[#bddd43]/45 px-3 py-2 text-xs font-bold text-[#28636b] hover:bg-[#bddd43]">{prompt}</button>)}</div></div></div><form onSubmit={submitQuestion} className="border-t-2 border-[#143f4f]/15 bg-[#fff9e9] p-4"><div className="flex gap-2"><Input value={question} onChange={(event) => setQuestion(event.target.value)} placeholder={assistantMode === 'English' ? 'Ask about Hakka waterways…' : '問問客庄水路的故事…'} className="h-12 rounded-full border-2 border-[#143f4f] bg-white px-4 font-medium" aria-label="輸入問題" /><Button type="submit" size="icon" className="size-12 rounded-full border-2 border-[#143f4f] bg-[#ff8069] hover:bg-[#ef674f]" aria-label="送出問題"><Send /></Button></div><p className="mt-2 flex items-center justify-center gap-1 text-[10px] font-bold text-[#72868d]"><ShieldCheck className="size-3" />回答限定於本展核定策展資料</p></form></SheetContent></Sheet>
     </main>
