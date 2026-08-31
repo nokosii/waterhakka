@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image', title: '水水書房｜水水客庄', description: '在地水文化資料查詢入口。', images: ['/water-key-visual.png'] },
 };
 
-export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ zone?: string }> }) {
-  const { zone = '' } = await searchParams;
-  return <main className="min-h-screen bg-background text-foreground"><SiteHeader /><WaterLibrary initialZone={zone} /></main>;
+export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ zone?: string; theme?: string }> }) {
+  const { zone = '', theme = '' } = await searchParams;
+  return <main className="min-h-screen bg-background pb-20 text-foreground md:pb-0"><SiteHeader /><WaterLibrary initialZone={zone} initialTheme={theme} /></main>;
 }

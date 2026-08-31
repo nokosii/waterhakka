@@ -6,26 +6,30 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { libraryRecords, zoneRecords } from '@/lib/exhibition-data';
+import { themeRecords } from '@/lib/theme-data';
 
-export function WaterLibrary({ initialZone = '' }: { initialZone?: string }) {
+export function WaterLibrary({ initialZone = '', initialTheme = '' }: { initialZone?: string; initialTheme?: string }) {
   const [query, setQuery] = useState('');
   const [type, setType] = useState('全部');
   const [region, setRegion] = useState('全部');
   const [zoneSlug, setZoneSlug] = useState(initialZone);
+  const [themeSlug, setThemeSlug] = useState(initialTheme);
 
   const results = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return libraryRecords.filter((record) => {
       const matchesQuery = !normalized || [record.id, record.title, record.note, record.type, record.region, record.era, ...record.keywords].join(' ').toLowerCase().includes(normalized);
-      return matchesQuery && (type === '全部' || record.type === type) && (region === '全部' || record.region === region) && (!zoneSlug || record.zoneSlug === zoneSlug);
+      const theme = themeRecords.find((item) => item.slug === themeSlug);
+      return matchesQuery && (type === '全部' || record.type === type) && (region === '全部' || record.region === region) && (!zoneSlug || record.zoneSlug === zoneSlug) && (!theme || theme.zoneSlugs.includes(record.zoneSlug));
     });
-  }, [query, region, type, zoneSlug]);
+  }, [query, region, themeSlug, type, zoneSlug]);
 
   function resetFilters() {
     setQuery('');
     setType('全部');
     setRegion('全部');
     setZoneSlug('');
+    setThemeSlug('');
   }
 
   function downloadResults() {
@@ -59,10 +63,11 @@ export function WaterLibrary({ initialZone = '' }: { initialZone?: string }) {
         <div className="mx-auto max-w-[1480px]">
           <div className="rounded-[30px] border-[3px] border-[#143f4f] bg-white p-5 shadow-[0_6px_0_#143f4f] sm:p-7">
             <label className="block"><span className="mb-2 block text-sm font-black">搜尋名稱、編號、關鍵字或內容說明</span><span className="relative block"><Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#648089]" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="例如：水分額、洗衫坑、伯公、埤塘……" className="h-14 rounded-full border-2 border-[#143f4f] bg-[#fff9e9] pl-12 pr-5 text-base font-medium" /></span></label>
-            <div className="mt-6 grid gap-5 lg:grid-cols-3">
+            <div className="mt-6 grid gap-5 lg:grid-cols-4">
               <FilterGroup label="資料類型" values={types} selected={type} onSelect={setType} />
               <FilterGroup label="地區" values={regions} selected={region} onSelect={setRegion} />
               <div><p className="mb-2 flex items-center gap-2 text-xs font-black tracking-[.12em] text-[#667d85]"><Filter className="size-4" />展區</p><select value={zoneSlug} onChange={(event) => setZoneSlug(event.target.value)} className="h-11 w-full rounded-full border-2 border-[#143f4f] bg-white px-4 text-sm font-black"><option value="">全部展區</option>{zoneRecords.map((zone) => <option key={zone.slug} value={zone.slug}>{zone.index} {zone.title}</option>)}</select></div>
+              <div><p className="mb-2 flex items-center gap-2 text-xs font-black tracking-[.12em] text-[#667d85]"><Filter className="size-4" />主題入口</p><select value={themeSlug} onChange={(event) => { setThemeSlug(event.target.value); setZoneSlug(''); }} className="h-11 w-full rounded-full border-2 border-[#143f4f] bg-white px-4 text-sm font-black"><option value="">全部主題</option>{themeRecords.map((theme) => <option key={theme.slug} value={theme.slug}>{theme.title}</option>)}</select></div>
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-dashed border-[#143f4f]/20 pt-5"><p className="flex items-center gap-2 font-black"><Database className="size-5 text-[#148781]" />找到 {results.length} 筆資料</p><div className="flex flex-wrap gap-2"><Button onClick={resetFilters} variant="outline" className="h-10 rounded-full border-2 border-[#143f4f] bg-white px-4 font-black"><X />清除篩選</Button><Button onClick={downloadResults} disabled={results.length === 0} className="h-10 rounded-full border-2 border-[#143f4f] bg-[#bddd43] px-4 font-black text-[#143f4f] hover:bg-[#d5e77d]"><Download />下載查詢結果 CSV</Button></div></div>
           </div>

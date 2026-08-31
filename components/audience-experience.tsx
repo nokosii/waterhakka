@@ -6,8 +6,8 @@ import { Badge } from '@/components/ui/badge';
 export type VisitMode = 'story' | 'challenge' | 'research';
 
 const modes = [
-  { id: 'story' as const, title: '輕鬆看故事', duration: '30 秒－3 分鐘', description: '先選一個展區，用影音、短片與繪本快速認識一條水路。', action: '選擇故事展區', target: 'exhibition', icon: BookOpen, color: '#ffcb47' },
-  { id: 'challenge' as const, title: '開始水路挑戰', duration: '3－10 分鐘', description: '操作分水、聲景、守水與時光任務，從選擇理解制度。', action: '挑戰六大展區', target: 'exhibition', icon: Gamepad2, color: '#bddd43' },
+  { id: 'story' as const, title: '輕鬆看故事', duration: '30 秒－3 分鐘', description: '先選物質水利或精神守護，再從主題入口進入三個展區。', action: '選擇觀看主題', target: 'themes', icon: BookOpen, color: '#ffcb47' },
+  { id: 'challenge' as const, title: '開始水路挑戰', duration: '3－10 分鐘', description: '先認識兩條策展路徑，再挑選分水、聲景、守水與時光任務。', action: '前往兩大主題', target: 'themes', icon: Gamepad2, color: '#bddd43' },
   { id: 'research' as const, title: '查資料與做教學', duration: '10 分鐘以上', description: '到水水書房查看典藏來源與延伸知識，適合地方研究及備課。', action: '開啟水水書房', target: '/library', icon: LibraryBig, color: '#75d4ed' },
 ];
 

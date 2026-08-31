@@ -4,6 +4,7 @@ import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 import { SiteHeader } from '@/components/site-header';
 import { ZonePageExperience } from '@/components/zone-page-experience';
 import { getZone, zoneRecords } from '@/lib/exhibition-data';
+import { getThemeForZone } from '@/lib/theme-data';
 
 export function generateStaticParams() {
   return zoneRecords.map((zone) => ({ slug: zone.slug }));
@@ -28,10 +29,11 @@ export default async function ZonePage({ params }: { params: Promise<{ slug: str
   if (!zone) notFound();
   const previous = zoneRecords[(zoneIndex - 1 + zoneRecords.length) % zoneRecords.length];
   const next = zoneRecords[(zoneIndex + 1) % zoneRecords.length];
+  const theme = getThemeForZone(zone.slug)!;
 
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
-      <SiteHeader />
+      <SiteHeader backHref={`/themes/${theme.slug}`} backLabel={`返回${theme.title}`} />
       <section className="relative isolate min-h-[78vh] overflow-hidden border-b-[3px] border-[#143f4f]">
         <img src={zone.image} alt={zone.alt} className="absolute inset-0 -z-20 h-full w-full object-cover" />
         <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(7,42,58,.96)_0%,rgba(7,42,58,.76)_52%,rgba(7,42,58,.2)_100%)]" />
@@ -50,7 +52,7 @@ export default async function ZonePage({ params }: { params: Promise<{ slug: str
       <ZonePageExperience zone={zone} zoneIndex={zoneIndex} />
 
       <nav className="border-t-[3px] border-[#143f4f] bg-[#ffcb47] px-5 py-8 sm:px-8 lg:px-12" aria-label="展區切換">
-        <div className="mx-auto grid max-w-[1480px] gap-4 sm:grid-cols-2"><a href={`/zones/${previous.slug}`} className="group rounded-2xl border-2 border-[#143f4f] bg-white p-5 shadow-[0_3px_0_#143f4f] hover:-translate-y-1"><span className="flex items-center gap-2 text-xs font-black text-[#71868d]"><ArrowLeft className="size-4" />上一展區</span><span className="mt-2 block text-lg font-black">{previous.index} {previous.title}</span></a><a href={`/zones/${next.slug}`} className="group rounded-2xl border-2 border-[#143f4f] bg-white p-5 text-right shadow-[0_3px_0_#143f4f] hover:-translate-y-1"><span className="flex items-center justify-end gap-2 text-xs font-black text-[#71868d]">下一展區 <ArrowRight className="size-4" /></span><span className="mt-2 block text-lg font-black">{next.index} {next.title}</span></a></div>
+        <div className="mx-auto grid max-w-[1480px] gap-4 lg:grid-cols-[1fr_.8fr_1fr]"><a href={`/zones/${previous.slug}`} className="group rounded-2xl border-2 border-[#143f4f] bg-white p-5 shadow-[0_3px_0_#143f4f] hover:-translate-y-1"><span className="flex items-center gap-2 text-xs font-black text-[#71868d]"><ArrowLeft className="size-4" />上一展區</span><span className="mt-2 block text-lg font-black">{previous.index} {previous.title}</span></a><a href={`/themes/${theme.slug}`} className="rounded-2xl border-2 border-[#143f4f] bg-[#bddd43] p-5 text-center shadow-[0_3px_0_#143f4f] hover:-translate-y-1"><span className="text-xs font-black text-[#57716f]">返回所屬主題</span><span className="mt-2 block text-lg font-black">{theme.title}</span></a><a href={`/zones/${next.slug}`} className="group rounded-2xl border-2 border-[#143f4f] bg-white p-5 text-right shadow-[0_3px_0_#143f4f] hover:-translate-y-1"><span className="flex items-center justify-end gap-2 text-xs font-black text-[#71868d]">下一展區 <ArrowRight className="size-4" /></span><span className="mt-2 block text-lg font-black">{next.index} {next.title}</span></a></div>
       </nav>
     </main>
   );
