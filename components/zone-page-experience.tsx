@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { ZoneGameDialog } from '@/components/zone-game-dialog';
 import type { ZoneRecord } from '@/lib/exhibition-data';
 
-const videoSamples = [
-  { kind: '主題影音', id: '-_ve4lMt-h8', ratio: 'aspect-video', icon: Play },
-  { kind: '直式 Shorts', id: '-yyo_VwrpwM', ratio: 'aspect-[9/16]', icon: Smartphone },
-  { kind: '客語繪本', id: 'fk0pbtNvFuM', ratio: 'aspect-video', icon: BookOpen },
+const mediaSamples = [
+  { kind: '主題影音', src: 'https://www.youtube-nocookie.com/embed/JD7b5WtPAWs', ratio: 'aspect-video', icon: Play, type: 'video' },
+  { kind: '直式 Shorts', src: 'https://www.youtube-nocookie.com/embed/P0i-WHDfTSA', ratio: 'aspect-[9/16]', icon: Smartphone, type: 'video' },
+  { kind: '客語繪本', src: '/picturebooks/shuishui-shuikou-bogong-sixian/index.html', ratio: 'aspect-[4/3]', icon: BookOpen, type: 'picturebook' },
 ];
 
 export function ZonePageExperience({ zone, zoneIndex }: { zone: ZoneRecord; zoneIndex: number }) {
@@ -69,14 +69,14 @@ export function ZonePageExperience({ zone, zoneIndex }: { zone: ZoneRecord; zone
           </div>
 
           <div className="mt-10 grid gap-6 lg:grid-cols-[1.1fr_.7fr_1.1fr] lg:items-start">
-            {videoSamples.map((item, index) => {
+            {mediaSamples.map((item, index) => {
               const Icon = item.icon;
               return (
                 <article key={item.kind} className="rounded-[28px] border-[3px] border-[#143f4f] bg-white p-3 shadow-[0_6px_0_#143f4f]">
-                  <div className={`mx-auto overflow-hidden rounded-[19px] border-2 border-[#143f4f] bg-black ${item.ratio} ${item.ratio.includes('9/16') ? 'max-h-[520px] max-w-[292px]' : ''}`}>
-                    <iframe className="h-full w-full" src={`https://www.youtube-nocookie.com/embed/${item.id}`} title={`${zone.title}－${item.kind}示範`} loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />
+                  <div className={`mx-auto overflow-hidden rounded-[19px] border-2 border-[#143f4f] ${item.type === 'picturebook' ? 'bg-[#f6efe2]' : 'bg-black'} ${item.ratio} ${item.ratio.includes('9/16') ? 'max-h-[520px] max-w-[292px]' : ''}`}>
+                    <iframe className="h-full w-full" src={item.src} title={`${zone.title}－${item.kind}示範`} loading="lazy" allow={item.type === 'video' ? 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share' : undefined} referrerPolicy="strict-origin-when-cross-origin" allowFullScreen={item.type === 'video'} />
                   </div>
-                  <div className="p-3 pb-4 pt-5"><span className="inline-flex items-center gap-2 rounded-full border-2 border-[#143f4f] px-3 py-1 text-[10px] font-black" style={{ backgroundColor: index === 0 ? '#ffcb47' : index === 1 ? '#ff8069' : '#bddd43' }}><Icon className="size-3.5" />{item.kind}功能示範</span><h3 className="mt-4 text-xl font-black leading-snug">{mediaCopy[index]}</h3><p className="mt-4 flex items-center gap-2 text-[11px] font-bold text-[#72868d]"><Captions className="size-4" />不自動播放；字幕與播放設定由 YouTube 提供</p></div>
+                  <div className="p-3 pb-4 pt-5"><span className="inline-flex items-center gap-2 rounded-full border-2 border-[#143f4f] px-3 py-1 text-[10px] font-black" style={{ backgroundColor: index === 0 ? '#ffcb47' : index === 1 ? '#ff8069' : '#bddd43' }}><Icon className="size-3.5" />{item.kind}功能示範</span><h3 className="mt-4 text-xl font-black leading-snug">{mediaCopy[index]}</h3><p className="mt-4 flex items-center gap-2 text-[11px] font-bold text-[#72868d]"><Captions className="size-4" />{item.type === 'picturebook' ? '四縣腔圖文繪本；可在框內上下翻閱 7 頁' : '不自動播放；字幕與播放設定由 YouTube 提供'}</p></div>
                 </article>
               );
             })}
